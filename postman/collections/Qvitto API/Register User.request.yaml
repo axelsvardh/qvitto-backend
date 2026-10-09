@@ -1,0 +1,7 @@
+$kind: http-request
+url: http://localhost:4000/api/register
+method: POST
+body:
+  type: json
+  content: '{ "name": "Axel", "email": "axel@qvitto.com", "password": "qvittoaxel" }'
+order: 1591770324069547

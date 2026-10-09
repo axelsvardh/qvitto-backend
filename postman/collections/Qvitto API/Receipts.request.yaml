@@ -1,0 +1,21 @@
+$kind: http-request
+url: http://localhost:4000/api/pos/receipts
+method: POST
+headers:
+  Content-Type: application/json
+  x-api-key: test-pos-key
+body:
+  type: json
+  content: |-
+    {
+      "merchant": "ICA Kvantum Solna",
+      "amount": 89.00,
+      "currency": "SEK",
+      "timestamp": "{{$isoTimestamp}}",
+      "items": [
+        { "itemName": "Mjölk 1L", "quantity": 1, "unitPrice": 15.90 },
+        { "itemName": "Bröd", "quantity": 2, "unitPrice": 32.90 },
+        { "itemName": "Bananer", "quantity": 1, "unitPrice": 7.30 }
+      ]
+    }
+order: 3581334670701884
