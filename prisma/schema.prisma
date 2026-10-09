@@ -21,32 +21,61 @@ model User {
   bankConnectionId String?
   pushToken        String?
   transactions     Transaction[]
+  linkedCards      LinkedCard[]
   createdAt        DateTime       @default(now())
 }
 
+model LinkedCard {
+  id                    String   @id @default(uuid())
+  user                  User     @relation(fields: [userId], references: [id])
+  userId                String
+  stripePaymentMethodId String   @unique
+  fingerprint           String   @unique
+  brand                 String
+  last4                 String
+  expMonth              Int
+  expYear               Int
+  createdAt             DateTime @default(now())
+}
+
 model Transaction {
-  id            String       @id @default(uuid())
-  user          User          @relation(fields: [userId], references: [id])
-  userId        String
-  merchant      String
-  amount        Float
-  currency      String
-  timestamp     DateTime
-  bankTxId      String?
-  receipt       Receipt?
+  id                  String       @id @default(uuid())
+  user                User          @relation(fields: [userId], references: [id])
+  userId              String
+  merchant            String
+  amount              Float
+  currency            String
+  timestamp           DateTime
+  paymentReferenceId  String?      @unique
+  receipt             Receipt?
 }
 
 model Receipt {
-  id            String       @id @default(uuid())
-  transaction   Transaction   @relation(fields: [transactionId], references: [id])
-  transactionId String        @unique
-  total         Float
-  vat           Float
-  source        String?
-  items         ReceiptItem[]
-  storeAddress  String?
-  category      String?
-  createdAt     DateTime      @default(now())
+  id             String          @id @default(uuid())
+  transaction    Transaction?    @relation(fields: [transactionId], references: [id])
+  transactionId  String?         @unique
+  total          Float
+  vat            Float
+  source         String?
+  merchant       String?
+  currency       String?
+  timestamp      DateTime?
+  posReferenceId String?         @unique
+  items          ReceiptItem[]
+  storeAddress   String?
+  category       ReceiptCategory @default(OTHER)
+  createdAt      DateTime        @default(now())
+}
+
+enum ReceiptCategory {
+  FOOD
+  GROCERIES
+  TRANSPORTATION
+  ENTERTAINMENT
+  HEALTH
+  SHOPPING
+  UTILITIES
+  OTHER
 }
 
 model ReceiptItem {

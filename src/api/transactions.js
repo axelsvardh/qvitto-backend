@@ -1,11 +1,14 @@
 import { PrismaClient } from "@prisma/client";
-import fetch from "node-fetch";
+import { categorizeMerchant } from "./retailerService.js";
+import { sendPushNotification } from "../utils/pushNotifications.js";
+import { attemptMatchForTransaction } from "./matchingService.js";
 const prisma = new PrismaClient();
 
 export const getAllTransactions = async (req, res) => {
   try {
     const transactions = await prisma.transaction.findMany({
-      include: { receipt: true },
+      where: { userId: req.user.userId },
+      include: { receipt: { include: { items: true } } },
     });
     res.json(transactions);
   } catch (err) {
@@ -51,6 +54,7 @@ export const bankWebhook = async (req, res) => {
         total: amount,
         vat: amount * 0.25,
         source: "Simulated Bank",
+        category: categorizeMerchant(merchant),
       },
     });
 
@@ -68,17 +72,26 @@ export const bankWebhook = async (req, res) => {
   }
 };
 
-// SEND NOTIFICATION
-async function sendPushNotification(pushToken, title, body) {
-  if (!pushToken) return;
-  await fetch("https://exp.host/--/api/v2/push/send", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      to: pushToken,
-      sound: "default",
-      title,
-      body,
-    }),
-  });
-}
+// 🔹 Simulerad webhook från PSP
+export const pspWebhook = async (req, res) => {
+  try {
+    const { userId, merchant, amount, currency, timestamp, referenceId } = req.body;
+
+    const tx = await prisma.transaction.create({
+      data: {
+        userId,
+        merchant,
+        amount,
+        currency,
+        timestamp: new Date(timestamp),
+        paymentReferenceId: referenceId ?? null,
+      },
+    });
+
+    const matchResult = await attemptMatchForTransaction(tx);
+
+    res.status(201).json({ transaction: tx, matched: Boolean(matchResult) });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
